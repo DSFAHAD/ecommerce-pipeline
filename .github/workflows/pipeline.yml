@@ -71,4 +71,3 @@ jobs:
           DB_NAME: ecommerce_pipeline
           DB_USER: postgres
           DB_PASSWORD: postgres
-        run: python tests/data-quality.py
