@@ -2,9 +2,11 @@ name: Data Pipeline CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   test-pipeline:
@@ -13,36 +15,51 @@ jobs:
     services:
       postgres:
         image: postgres:16
+
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: ecommerce_pipeline
+
         ports:
           - 5432:5432
+
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres -d ecommerce_pipeline"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
 
     steps:
+
+      # 1. Get the repository code
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2. Install Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
+      # 3. Install Python dependencies
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Create schemas
+      # 4. Create raw database schema
+      - name: Create raw schema
         env:
           PGPASSWORD: postgres
         run: |
-          psql -h localhost -U postgres -d ecommerce_pipeline -f sql/raw-schema.sql
+          psql \
+            -h localhost \
+            -U postgres \
+            -d ecommerce_pipeline \
+            -f sql/raw-schema.sql
 
+      # 5. Load sample data
       - name: Load sample data into raw
         env:
           DB_HOST: localhost
@@ -50,20 +67,32 @@ jobs:
           DB_NAME: ecommerce_pipeline
           DB_USER: postgres
           DB_PASSWORD: postgres
-        run: python scripts/load-raw.py data/sample
+        run: |
+          python scripts/load-raw.py data/sample
 
+      # 6. Create staging tables / transformations
       - name: Run staging transformations
         env:
           PGPASSWORD: postgres
         run: |
-          psql -h localhost -U postgres -d ecommerce_pipeline -f sql/stagging-schema.sql
+          psql \
+            -h localhost \
+            -U postgres \
+            -d ecommerce_pipeline \
+            -f sql/staging-schema.sql
 
+      # 7. Create analytics tables / transformations
       - name: Run analytics transformations
         env:
           PGPASSWORD: postgres
         run: |
-          psql -h localhost -U postgres -d ecommerce_pipeline -f sql/analytical-schema.sql
+          psql \
+            -h localhost \
+            -U postgres \
+            -d ecommerce_pipeline \
+            -f sql/analytical-schema.sql
 
+      # 8. Run data quality checks
       - name: Run data quality checks
         env:
           DB_HOST: localhost
@@ -71,4 +100,5 @@ jobs:
           DB_NAME: ecommerce_pipeline
           DB_USER: postgres
           DB_PASSWORD: postgres
-        run: python tests/data-quality.py
+        run: |
+          python tests/data-quality.py
