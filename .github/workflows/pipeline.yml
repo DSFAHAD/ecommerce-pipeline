@@ -59,7 +59,7 @@ jobs:
             -d ecommerce_pipeline \
             -f sql/raw-schema.sql
 
-      # 5. Load sample data
+      # 5. Load sample data into raw
       - name: Load sample data into raw
         env:
           DB_HOST: localhost
@@ -81,6 +81,25 @@ jobs:
             -d ecommerce_pipeline \
             -f sql/staging-schema.sql
 
+      # 6.5 Verify staging data
+      - name: Verify staging data
+        env:
+          PGPASSWORD: postgres
+        run: |
+          echo "Checking staging.orders..."
+          psql \
+            -h localhost \
+            -U postgres \
+            -d ecommerce_pipeline \
+            -c "SELECT COUNT(*) AS orders FROM staging.orders;"
+
+          echo "Checking staging.order_items..."
+          psql \
+            -h localhost \
+            -U postgres \
+            -d ecommerce_pipeline \
+            -c "SELECT COUNT(*) AS order_items FROM staging.order_items;"
+
       # 7. Create analytics tables / transformations
       - name: Run analytics transformations
         env:
@@ -92,6 +111,32 @@ jobs:
             -d ecommerce_pipeline \
             -f sql/analytical-schema.sql
 
+      # 7.5 Verify analytics data
+      - name: Verify analytics data
+        env:
+          PGPASSWORD: postgres
+        run: |
+          echo "Checking analytics.fact_order_items..."
+          psql \
+            -h localhost \
+            -U postgres \
+            -d ecommerce_pipeline \
+            -c "SELECT COUNT(*) AS fact_order_items FROM analytics.fact_order_items;"
+
+          echo "Checking analytics.dim_customers..."
+          psql \
+            -h localhost \
+            -U postgres \
+            -d ecommerce_pipeline \
+            -c "SELECT COUNT(*) AS dim_customers FROM analytics.dim_customers;"
+
+          echo "Checking analytics.dim_products..."
+          psql \
+            -h localhost \
+            -U postgres \
+            -d ecommerce_pipeline \
+            -c "SELECT COUNT(*) AS dim_products FROM analytics.dim_products;"
+
       # 8. Run data quality checks
       - name: Run data quality checks
         env:
@@ -102,3 +147,9 @@ jobs:
           DB_PASSWORD: postgres
         run: |
           python tests/data-quality.py
+
+      # 9. Stop containers
+      - name: Stop containers
+        if: always()
+        run: |
+          echo "PostgreSQL service will be stopped automatically by GitHub Actions."
