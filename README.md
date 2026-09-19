@@ -1,246 +1,557 @@
-# 🛒 E-Commerce Data Pipeline
+🛒 E-Commerce Data Engineering Pipeline
 
-An end-to-end data engineering pipeline built on the Olist Brazilian E-Commerce dataset — demonstrating raw ingestion, staging transformations, a star-schema analytics layer, automated data quality testing, and CI/CD.
+An end-to-end E-Commerce Data Engineering pipeline built with Python, PostgreSQL, SQL, and GitHub Actions.
 
-![CI](https://github.com/DSFAHAD/ecommerce-pipeline/actions/workflows/pipeline.yml/badge.svg)
-![Python](https://img.shields.io/badge/Python-3.11-blue)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue)
-![License](https://img.shields.io/badge/License-MIT-green)
+This project demonstrates how raw e-commerce CSV data can be ingested, transformed through multiple data layers, modeled into analytical fact and dimension tables, and automatically validated using data quality checks in CI.
 
 ---
 
-## 📌 Overview
+🚀 Project Overview
 
-This project simulates a real-world data engineering workflow: ingesting raw e-commerce data, cleaning and transforming it through a layered architecture, and modeling it into a star schema optimized for analytics — all validated by automated tests and CI.
+The pipeline processes a sample of the Olist E-Commerce dataset through a structured data engineering workflow.
 
-**Dataset:** [Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) — 100k+ real orders (2016–2018)
+The main goal is to demonstrate practical concepts such as:
 
----
-
-## 🏗️ Architecture
-
-```mermaid
-flowchart LR
-    A[CSV Files\nOlist Dataset] --> B[Python Loader\nload-raw.py]
-    B --> C[(Raw Schema\nPostgreSQL)]
-    C --> D[SQL Transformations\nstagging-schema.sql]
-    D --> E[(Staging Schema\nCleaned & Typed)]
-    E --> F[SQL Transformations\nanalytical-schema.sql]
-    F --> G[(Analytics Schema\nStar Schema)]
-    G --> H[Business Views\nWindow Functions]
-    H --> I[📊 Insights:\nRevenue Trends,\nTop Products,\nTop Customers]
-```
-
-### Layered Data Flow
-
-```mermaid
-graph TD
-    subgraph Raw Layer
-        R1[orders]
-        R2[customers]
-        R3[order_items]
-        R4[products]
-        R5[sellers]
-        R6[payments]
-        R7[reviews]
-    end
-
-    subgraph Staging Layer
-        S1[Cleaned & Typed Tables]
-    end
-
-    subgraph Analytics Layer - Star Schema
-        F[fact_order_items]
-        D1[dim_customers]
-        D2[dim_products]
-        D3[dim_sellers]
-        D4[dim_date]
-    end
-
-    R1 & R2 & R3 & R4 & R5 & R6 & R7 --> S1
-    S1 --> F
-    D1 --- F
-    D2 --- F
-    D3 --- F
-    D4 --- F
-```
+- Data ingestion
+- Relational data handling
+- PostgreSQL database design
+- Raw → Staging → Analytics architecture
+- SQL transformations
+- Fact and dimension modeling
+- Data quality testing
+- Referential integrity
+- Automated CI using GitHub Actions
 
 ---
 
-## ⭐ Star Schema Design
+🏗️ Pipeline Architecture
 
-```mermaid
-erDiagram
-    FACT_ORDER_ITEMS {
-        string order_id
-        string customer_id
-        string product_id
-        string seller_id
-        date order_date
-        float price
-        float freight_value
-        float total_item_value
-    }
-    DIM_CUSTOMERS {
-        string customer_id
-        string customer_city
-        string customer_state
-    }
-    DIM_PRODUCTS {
-        string product_id
-        string product_category
-    }
-    DIM_SELLERS {
-        string seller_id
-        string seller_city
-        string seller_state
-    }
-    DIM_DATE {
-        date date
-        int year
-        int month
-        int quarter
-    }
-
-    FACT_ORDER_ITEMS }o--|| DIM_CUSTOMERS : customer_id
-    FACT_ORDER_ITEMS }o--|| DIM_PRODUCTS : product_id
-    FACT_ORDER_ITEMS }o--|| DIM_SELLERS : seller_id
-    FACT_ORDER_ITEMS }o--|| DIM_DATE : order_date
-```
+                 ┌──────────────────────┐
+                 │  Olist CSV Dataset   │
+                 └──────────┬───────────┘
+                            │
+                            ▼
+                 ┌──────────────────────┐
+                 │  Python Sample Data  │
+                 │   sample_data.py     │
+                 └──────────┬───────────┘
+                            │
+                            ▼
+                 ┌──────────────────────┐
+                 │ Python Data Loading  │
+                 │    load-raw.py       │
+                 └──────────┬───────────┘
+                            │
+                            ▼
+              ┌────────────────────────────┐
+              │      PostgreSQL RAW        │
+              │                            │
+              │ customers                  │
+              │ orders                     │
+              │ order_items                │
+              │ products                   │
+              │ sellers                    │
+              │ payments                   │
+              │ reviews                    │
+              │ geolocation                │
+              └──────────────┬─────────────┘
+                             │
+                             ▼
+              ┌────────────────────────────┐
+              │     STAGING LAYER          │
+              │       SQL Transformations  │
+              │                            │
+              │ Cleaning                   │
+              │ Type conversions            │
+              │ Null handling               │
+              │ Standardization             │
+              └──────────────┬─────────────┘
+                             │
+                             ▼
+              ┌────────────────────────────┐
+              │     ANALYTICS LAYER        │
+              │                            │
+              │ dim_date                   │
+              │ dim_customers              │
+              │ dim_products               │
+              │ dim_sellers                │
+              │ fact_order_items            │
+              └──────────────┬─────────────┘
+                             │
+                             ▼
+              ┌────────────────────────────┐
+              │    Data Quality Checks     │
+              │     data-quality.py        │
+              │                            │
+              │ Row existence              │
+              │ NULL checks                │
+              │ Referential integrity      │
+              │ Negative value checks      │
+              └──────────────┬─────────────┘
+                             │
+                             ▼
+                 ┌──────────────────────┐
+                 │   GitHub Actions     │
+                 │       CI ✅          │
+                 └──────────────────────┘
 
 ---
 
-## 🛠️ Tech Stack
+🔄 Data Flow
 
-| Layer | Tool |
-|---|---|
-| Language | Python 3.11 |
-| Database | PostgreSQL 16 |
-| Data Loading | Pandas + SQLAlchemy |
-| Transformations | Pure SQL (CTEs, Window Functions) |
-| Testing | Python (custom data quality checks) |
-| CI/CD | GitHub Actions |
-| Version Control | Git + GitHub |
+1. Source Data
+
+The pipeline starts with Olist e-commerce CSV files.
+
+The sample dataset contains relational tables such as:
+
+- Customers
+- Orders
+- Order Items
+- Products
+- Sellers
+- Payments
+- Reviews
+- Geolocation
+- Product Category Translation
 
 ---
 
-## 📁 Project Structure
+2. Relational Sampling
 
-```
-ecommerce-pipeline/
-├── .github/workflows/
-│   └── pipeline.yml          # CI pipeline definition
+The project uses "sample_data.py" to create a smaller dataset for development and CI testing.
+
+Instead of randomly taking rows independently from every CSV, the sampling process preserves important relationships between tables.
+
+For example:
+
+Orders
+   │
+   ├── Customer
+   │
+   └── Order Items
+          │
+          ├── Product
+          └── Seller
+
+This ensures that the sample data can successfully pass relational joins.
+
+---
+
+3. Raw Layer
+
+"load-raw.py" loads the sample CSV files into PostgreSQL.
+
+The raw layer keeps the source data available before transformation.
+
+data/sample/
+      ↓
+load-raw.py
+      ↓
+PostgreSQL
+      ↓
+raw schema
+
+---
+
+4. Staging Layer
+
+The staging layer transforms the raw data using SQL.
+
+Examples of transformations include:
+
+- Timestamp conversion
+- Text standardization
+- NULL handling
+- Duplicate removal
+- Basic validation
+- Negative value filtering
+
+Example:
+
+INITCAP(customer_city)
+
+and:
+
+UPPER(customer_state)
+
+The staging layer provides cleaner and standardized data for analytics.
+
+---
+
+5. Analytics Layer
+
+The transformed staging data is modeled into analytical tables.
+
+Dimension Tables
+
+dim_date
+dim_customers
+dim_products
+dim_sellers
+
+Fact Table
+
+fact_order_items
+
+The main fact table contains metrics such as:
+
+- Price
+- Freight value
+- Total item value
+- Order date
+- Delivery days
+- Order status
+
+---
+
+📊 Analytical Views
+
+The project also creates analytical views for common business questions.
+
+Monthly Revenue
+
+vw_monthly_revenue
+
+Provides:
+
+- Year
+- Month
+- Monthly revenue
+- Running total revenue
+
+Top Products by Category
+
+vw_top_products_by_category
+
+Uses SQL window functions to rank products within their categories.
+
+Top Customers
+
+vw_top_customers
+
+Provides:
+
+- Customer
+- Location
+- Total spending
+- Number of orders
+- Spending rank
+
+---
+
+🧪 Data Quality
+
+The pipeline includes automated data quality checks.
+
+Current checks include:
+
+Check| Purpose
+Fact table has rows| Ensures analytics data exists
+Customer dimension has rows| Ensures customer data exists
+Product dimension has rows| Ensures product data exists
+No NULL order IDs| Validates fact records
+No NULL customer IDs| Validates customer relationships
+Customer referential integrity| Ensures fact customers exist in the dimension
+No negative prices| Validates business data
+
+Current Test Result
+
+[PASS] fact_order_items has rows (value=52)
+[PASS] dim_customers has rows (value=50)
+[PASS] dim_products has rows (value=51)
+[PASS] fact_order_items.order_id has no nulls (value=0)
+[PASS] fact_order_items.customer_id has no nulls (value=0)
+[PASS] All fact customer_ids exist in dim_customers (value=0)
+[PASS] No negative prices in fact_order_items (value=0)
+
+All checks passed!
+
+---
+
+⚙️ GitHub Actions CI
+
+The project uses GitHub Actions to automatically test the pipeline.
+
+On every push or pull request to "main", the workflow:
+
+1. Checkout repository
+        ↓
+2. Setup Python 3.11
+        ↓
+3. Install dependencies
+        ↓
+4. Start PostgreSQL 16
+        ↓
+5. Create RAW schema
+        ↓
+6. Load sample data
+        ↓
+7. Run STAGING transformations
+        ↓
+8. Verify staging data
+        ↓
+9. Verify staging relationships
+        ↓
+10. Run ANALYTICS transformations
+        ↓
+11. Verify analytical tables
+        ↓
+12. Run data quality checks
+        ↓
+13. Pipeline passes ✅
+
+This allows the pipeline to be tested automatically instead of relying only on local execution.
+
+---
+
+🛠️ Technologies Used
+
+Technology| Purpose
+🐍 Python| Data ingestion and quality checks
+🐘 PostgreSQL| Database and data warehouse
+SQL| Data transformation and analytical modeling
+Pandas| CSV/data processing
+SQLAlchemy| Python → PostgreSQL connection
+python-dotenv| Environment configuration
+Git| Version control
+GitHub| Source code repository
+GitHub Actions| Continuous Integration
+
+---
+
+📁 Project Structure
+
+e-commerce-pipeline/
+│
+├── .github/
+│   └── workflows/
+│       └── data-pipeline.yml
+│
 ├── data/
-│   ├── raw/                  # Full dataset (gitignored, local only)
-│   └── sample/                # Small sample for CI testing
+│   ├── raw/
+│   │   └── Olist source datasets
+│   │
+│   └── sample/
+│       └── Sample relational datasets
+│
 ├── scripts/
-│   ├── load-raw.py           # Extract: CSV → Raw schema
-│   └── sample_data.py        # Generates CI sample data
+│   ├── load-raw.py
+│   └── sample_data.py
+│
 ├── sql/
-│   ├── raw-schema.sql        # Raw schema definition
-│   ├── stagging-schema.sql   # Cleaning & transformation logic
-│   └── analytical-schema.sql # Star schema + analytical views
+│   ├── raw-schema.sql
+│   ├── staging-schema.sql
+│   └── analytical-schema.sql
+│
 ├── tests/
-│   └── data-quality.py       # Automated data quality checks
+│   └── data-quality.py
+│
 ├── requirements.txt
+├── .gitignore
 └── README.md
-```
 
 ---
 
-## 🚀 How to Run Locally
+💻 Local Setup
 
-### 1. Clone the repo
-```bash
+1. Clone the repository
+
 git clone https://github.com/DSFAHAD/ecommerce-pipeline.git
+
 cd ecommerce-pipeline
-```
 
-### 2. Set up virtual environment
-```bash
+---
+
+2. Create a virtual environment
+
+Windows:
+
 python -m venv venv
-venv\Scripts\activate        # Windows
-source venv/bin/activate     # Mac/Linux
+
+Activate it:
+
+venv\Scripts\activate
+
+---
+
+3. Install dependencies
+
 pip install -r requirements.txt
-```
 
-### 3. Set up PostgreSQL
-```sql
-CREATE DATABASE ecommerce_pipeline;
-```
+---
 
-### 4. Configure environment variables
-Create a `.env` file:
-```
+4. Configure PostgreSQL
+
+Create a PostgreSQL database:
+
+Database: ecommerce_pipeline
+User: postgres
+
+Then configure your environment variables:
+
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=ecommerce_pipeline
 DB_USER=postgres
 DB_PASSWORD=your_password
-```
 
-### 5. Download the dataset
-Get the [Olist dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) and place the CSVs in `data/raw/`
+---
 
-### 6. Run the pipeline
-```bash
-python scripts/load-raw.py data/raw
-```
-Then run the SQL files in pgAdmin (or via psql) in order:
-1. `sql/raw-schema.sql`
-2. `sql/stagging-schema.sql`
-3. `sql/analytical-schema.sql`
+5. Create the raw schema
 
-### 7. Run data quality tests
-```bash
+Using "psql":
+
+psql -h localhost -U postgres -d ecommerce_pipeline -f sql/raw-schema.sql
+
+---
+
+6. Generate sample data
+
+python scripts/sample_data.py
+
+---
+
+7. Load raw data
+
+python scripts/load-raw.py data/sample
+
+---
+
+8. Run staging transformations
+
+psql -h localhost -U postgres -d ecommerce_pipeline -f sql/staging-schema.sql
+
+---
+
+9. Run analytics transformations
+
+psql -h localhost -U postgres -d ecommerce_pipeline -f sql/analytical-schema.sql
+
+---
+
+10. Run data quality tests
+
 python tests/data-quality.py
-```
+
+Expected result:
+
+All checks passed!
 
 ---
 
-## 📊 Sample Insights
+🔍 Key Engineering Challenge
 
-**Monthly Revenue Growth (2016–2018)**
-Revenue scaled from a few hundred dollars in late 2016 to over $1M/month by 2018 — tracked via a `SUM() OVER()` running total window function.
+One important issue encountered during development was maintaining relationships while creating sample data.
 
-**Top Products by Category**
-Ranked using `RANK() OVER (PARTITION BY category ORDER BY revenue DESC)` to identify best-sellers within each product category.
+Initially, taking the first rows independently from each CSV caused relationships such as:
 
-**Top Customers by Spend**
-Identified highest-value customers using aggregate + window functions for potential loyalty/retention targeting.
+order_items.order_id
+        ↓
+orders.order_id
+
+to break.
+
+This resulted in an empty analytical fact table.
+
+The solution was to implement relational sampling:
+
+Select Orders
+     ↓
+Select their Order Items
+     ↓
+Select related Customers
+     ↓
+Select related Products
+     ↓
+Select related Sellers
+
+After the fix:
+
+Orders          → 50
+Order Items     → 52
+Customers       → 50
+Products        → 51
+Sellers         → 48
+
+The staging join then successfully produced:
+
+52 matching rows
+
+and the analytics fact table contained:
+
+52 rows
+
+This was a practical lesson in why data sampling must preserve primary-key / foreign-key relationships.
 
 ---
 
-## ✅ CI/CD Pipeline
+🎯 What This Project Demonstrates
 
-Every push triggers an automated GitHub Actions workflow that:
-1. Spins up a fresh PostgreSQL instance
-2. Loads sample data
-3. Runs all SQL transformations (raw → staging → analytics)
-4. Executes automated data quality checks
+This project demonstrates practical understanding of:
 
-This ensures the pipeline logic is always verified — not just "works on my machine."
-
----
-
-## 🔮 Future Improvements
-
-- [ ] Add Apache Airflow for orchestration
-- [ ] Containerize with Docker
-- [ ] Add dbt for transformation management
-- [ ] Build a BI dashboard (Metabase/Streamlit) on top of analytics views
-- [ ] Add incremental loading instead of full refresh
-
----
-
-## 👤 Author
-
-**Fahad**
-Computer Science Undergraduate | Aspiring Data Engineer
-GitHub: [@DSFAHAD](https://github.com/DSFAHAD)
+- ETL / ELT concepts
+- Data ingestion
+- Relational databases
+- PostgreSQL
+- SQL transformations
+- Data cleaning
+- Data modeling
+- Fact and dimension tables
+- Star-schema concepts
+- SQL joins
+- Window functions
+- Referential integrity
+- Data validation
+- Python automation
+- Git/GitHub
+- CI with GitHub Actions
 
 ---
 
-## 📄 License
+📈 Future Improvements
 
-This project is licensed under the MIT License.
+Possible future extensions include:
+
+- Add Apache Airflow orchestration
+- Add Docker containerization
+- Add dbt transformations
+- Add incremental data loading
+- Add more comprehensive data quality tests
+- Add data lineage
+- Add a BI dashboard
+- Add automated deployment
+- Add monitoring and pipeline logging
+- Process the complete Olist dataset
+
+---
+
+👨‍💻 Author
+
+Fahad
+
+Computer Science Student | Aspiring Data Engineer / Data Scientist
+
+Focused on:
+
+Python
+SQL
+PostgreSQL
+Data Engineering
+Data Science
+Machine Learning
+
+---
+
+🔗 Repository
+
+GitHub:
+https://github.com/DSFAHAD/ecommerce-pipeline
+
+---
+
+⭐ If you find this project useful
+
+Feel free to explore the repository and follow the development of the project.
+
+#DataEngineering #Python #PostgreSQL #SQL #ETL #DataPipeline #GitHubActions #DataQuality #DataModeling #CI #LearningByDoing
