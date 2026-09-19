@@ -116,20 +116,6 @@ jobs:
                 JOIN staging.orders o
                 ON oi.order_id = o.order_id;"
 
-          echo "Sample order IDs from staging.orders:"
-          psql \
-            -h localhost \
-            -U postgres \
-            -d ecommerce_pipeline \
-            -c "SELECT order_id FROM staging.orders LIMIT 5;"
-
-          echo "Sample order IDs from staging.order_items:"
-          psql \
-            -h localhost \
-            -U postgres \
-            -d ecommerce_pipeline \
-            -c "SELECT order_id FROM staging.order_items LIMIT 5;"
-
       # 7. Create analytics tables / transformations
       - name: Run analytics transformations
         env:
