@@ -1,0 +1,74 @@
+name: Data Pipeline CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-pipeline:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ecommerce_pipeline
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create schemas
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d ecommerce_pipeline -f sql/raw-schema.sql
+
+      - name: Load sample data into raw
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: ecommerce_pipeline
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+        run: python scripts/load-raw.py data/sample
+
+      - name: Run staging transformations
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d ecommerce_pipeline -f sql/stagging-schema.sql
+
+      - name: Run analytics transformations
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d ecommerce_pipeline -f sql/analytical-schema.sql
+
+      - name: Run data quality checks
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: ecommerce_pipeline
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+        run: python tests/data_quality.py
