@@ -100,6 +100,36 @@ jobs:
             -d ecommerce_pipeline \
             -c "SELECT COUNT(*) AS order_items FROM staging.order_items;"
 
+      # 6.6 Verify staging JOIN
+      - name: Verify staging join
+        env:
+          PGPASSWORD: postgres
+        run: |
+          echo "Checking staging join..."
+
+          psql \
+            -h localhost \
+            -U postgres \
+            -d ecommerce_pipeline \
+            -c "SELECT COUNT(*) AS matching_rows
+                FROM staging.order_items oi
+                JOIN staging.orders o
+                ON oi.order_id = o.order_id;"
+
+          echo "Sample order IDs from staging.orders:"
+          psql \
+            -h localhost \
+            -U postgres \
+            -d ecommerce_pipeline \
+            -c "SELECT order_id FROM staging.orders LIMIT 5;"
+
+          echo "Sample order IDs from staging.order_items:"
+          psql \
+            -h localhost \
+            -U postgres \
+            -d ecommerce_pipeline \
+            -c "SELECT order_id FROM staging.order_items LIMIT 5;"
+
       # 7. Create analytics tables / transformations
       - name: Run analytics transformations
         env:
